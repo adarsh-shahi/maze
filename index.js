@@ -1,13 +1,13 @@
-const { Engine, Render, Runner, World, Bodies } = Matter;
+const { Engine, Render, Runner, World, Bodies, Body } = Matter;
 
 const engine = Engine.create();
 const { world } = engine;
 
-const cells = 3; // 3 * 3 (horizontal = 3 & vertical = 3) = 9
+const cells = 10; // 3 * 3 (horizontal = 3 & vertical = 3) = 9
 const width = 600;
 const height = 600;
 
-const unitLength = width / cells
+const unitLength = width / cells;
 
 const render = Render.create({
 	element: document.body,
@@ -129,48 +129,84 @@ const stepTroughCell = (row, column) => {
 		else if (direction === "up") horizontals[row - 1][column] = true;
 		else if (direction === "down") horizontals[row][column] = true;
 
-    stepTroughCell(nextRow, nextColumn)
+		stepTroughCell(nextRow, nextColumn);
 	}
 };
 
 stepTroughCell(startRow, startColumn);
 
-horizontals.forEach(( row , rowIndex) => {
-  row.forEach((open, columnIndex) => {
-    if(!open){
+horizontals.forEach((row, rowIndex) => {
+	row.forEach((open, columnIndex) => {
+		if (!open) {
+			//* horizontal call creation
+			const widthDistance = columnIndex * unitLength + unitLength / 2;
+			const heightDistance = rowIndex * unitLength + unitLength;
+			const horizontalWall = Bodies.rectangle(
+				widthDistance,
+				heightDistance,
+				unitLength,
+				10,
+				{
+					isStatic: true,
+				}
+			);
+			World.add(world, horizontalWall);
+		}
+	});
+});
 
-      //* horizontal call creation
-      const widthDistance = columnIndex * unitLength + unitLength / 2
-      const heightDistance = (rowIndex * unitLength) + unitLength
-      const horizontalWall = Bodies.rectangle(widthDistance, heightDistance, unitLength, 10, {
-        isStatic: true
-      })
-      World.add(world, horizontalWall)
-    }
-  })
-})
-
-verticals.forEach(( row , rowIndex) => {
-  row.forEach((open, columnIndex) => {
-    if(!open){
-
-      //* vertical call creation
-      const heightDistance = (rowIndex * unitLength) + unitLength / 2
-      const widthDistance = unitLength * columnIndex + unitLength  
-      const verticalWall = Bodies.rectangle(widthDistance, heightDistance, 10, unitLength, {
-        isStatic: true
-      })
-      World.add(world, verticalWall)
-    }
-  })
-})
+verticals.forEach((row, rowIndex) => {
+	row.forEach((open, columnIndex) => {
+		if (!open) {
+			//* vertical call creation
+			const heightDistance = rowIndex * unitLength + unitLength / 2;
+			const widthDistance = unitLength * columnIndex + unitLength;
+			const verticalWall = Bodies.rectangle(
+				widthDistance,
+				heightDistance,
+				10,
+				unitLength,
+				{
+					isStatic: true,
+				}
+			);
+			World.add(world, verticalWall);
+		}
+	});
+});
 
 const goal = Bodies.rectangle(
-  width - unitLength / 2,
-  height - unitLength / 2,
-  unitLength * .7,
-  unitLength * .7, {
-    isStatic: true
-  }
-)
-World.add(world, goal)
+	width - unitLength / 2,
+	height - unitLength / 2,
+	unitLength * 0.7,
+	unitLength * 0.7,
+	{
+		isStatic: true,
+	}
+);
+World.add(world, goal);
+
+const ball = Bodies.circle(unitLength / 2, unitLength / 2, unitLength * 0.25);
+
+World.add(world, ball);
+
+document.addEventListener("keydown", (event) => {
+	const { x, y } = ball.velocity;
+	console.log(x, y);
+	if (event.keyCode === 87) {
+		// move up
+		Body.setVelocity(ball, { x, y: y - 5 });
+	}
+	if (event.keyCode === 68) {
+		// move right
+		Body.setVelocity(ball, { x: x + 5, y });
+	}
+	if (event.keyCode === 83) {
+		// move down
+		Body.setVelocity(ball, { x, y: y + 5 });
+	}
+	if (event.keyCode === 65) {
+		// move left
+		Body.setVelocity(ball, { x: x - 5, y });
+	}
+});
