@@ -7,6 +7,8 @@ const cells = 3; // 3 * 3 (horizontal = 3 & vertical = 3) = 9
 const width = 600;
 const height = 600;
 
+const unitLength = width / cells
+
 const render = Render.create({
 	element: document.body,
 	engine,
@@ -23,22 +25,22 @@ Runner.run(Runner.create(), engine);
 // *Walls
 const walls = [
 	// left
-	Bodies.rectangle(0, height / 2, 50, height, {
+	Bodies.rectangle(0, height / 2, 2, height, {
 		isStatic: true,
 	}),
 
 	// top
-	Bodies.rectangle(width / 2, 0, width, 50, {
+	Bodies.rectangle(width / 2, 0, width, 2, {
 		isStatic: true,
 	}),
 
 	// right
-	Bodies.rectangle(width, height / 2, 50, height, {
+	Bodies.rectangle(width, height / 2, 2, height, {
 		isStatic: true,
 	}),
 
 	// bottom
-	Bodies.rectangle(width / 2, height, width, 50, {
+	Bodies.rectangle(width / 2, height, width, 2, {
 		isStatic: true,
 	}),
 ];
@@ -58,10 +60,10 @@ const shuffle = (arr) => {
 		arr[counter] = arr[index];
 		arr[index] = temp;
 	}
-  return arr
+	return arr;
 };
 
-let grid = Array(cells)
+const grid = Array(cells)
 	.fill(null)
 	.map(() => {
 		return Array(cells).fill(false);
@@ -74,13 +76,13 @@ let grid = Array(cells)
 // 	}
 // }
 
-let verticals = Array(cells)
+const verticals = Array(cells)
 	.fill(null)
 	.map(() => {
 		return Array(cells - 1).fill(false);
 	});
 
-let horizontals = Array(cells - 1)
+const horizontals = Array(cells - 1)
 	.fill(null)
 	.map(() => {
 		return Array(cells).fill(false);
@@ -98,12 +100,77 @@ const stepTroughCell = (row, column) => {
 
 	// assemble randomly-ordered list of neighbours
 	const neighbours = shuffle([
-		[row - 1, column],
-		[row, column + 1],
-		[row + 1, column],
-		[row, column - 1],
+		[row - 1, column, "up"],
+		[row, column + 1, "right"],
+		[row + 1, column, "down"],
+		[row, column - 1, "left"],
 	]);
 
+	// for rach neighbour
+	for (let neighbour of neighbours) {
+		const [nextRow, nextColumn, direction] = neighbour;
+
+		//see if that neighbour is out of bounds
+		if (
+			nextRow < 0 ||
+			nextRow >= cells ||
+			nextColumn < 0 ||
+			nextColumn >= cells
+		) {
+			continue;
+		}
+
+		// if we have visited that neighbour, continue to next neighbour
+		if (grid[nextRow][nextColumn]) continue;
+
+		// remove a wall from either horizontals or verticals
+		if (direction === "left") verticals[row][column - 1] = true;
+		else if (direction === "right") verticals[row][column] = true;
+		else if (direction === "up") horizontals[row - 1][column] = true;
+		else if (direction === "down") horizontals[row][column] = true;
+
+    stepTroughCell(nextRow, nextColumn)
+	}
 };
 
 stepTroughCell(startRow, startColumn);
+
+horizontals.forEach(( row , rowIndex) => {
+  row.forEach((open, columnIndex) => {
+    if(!open){
+
+      //* horizontal call creation
+      const widthDistance = columnIndex * unitLength + unitLength / 2
+      const heightDistance = (rowIndex * unitLength) + unitLength
+      const horizontalWall = Bodies.rectangle(widthDistance, heightDistance, unitLength, 10, {
+        isStatic: true
+      })
+      World.add(world, horizontalWall)
+    }
+  })
+})
+
+verticals.forEach(( row , rowIndex) => {
+  row.forEach((open, columnIndex) => {
+    if(!open){
+
+      //* vertical call creation
+      const heightDistance = (rowIndex * unitLength) + unitLength / 2
+      const widthDistance = unitLength * columnIndex + unitLength  
+      const verticalWall = Bodies.rectangle(widthDistance, heightDistance, 10, unitLength, {
+        isStatic: true
+      })
+      World.add(world, verticalWall)
+    }
+  })
+})
+
+const goal = Bodies.rectangle(
+  width - unitLength / 2,
+  height - unitLength / 2,
+  unitLength * .7,
+  unitLength * .7, {
+    isStatic: true
+  }
+)
+World.add(world, goal)
